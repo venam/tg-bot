@@ -36,6 +36,7 @@ nmh used for notes received as email
 fortune
 A file that has the weather in it 
 (I'm taken it from another script I wrote to update me about the weather)
+curl
 A notification script 
 (Also comes with this repo, but you can use any other notification system
 Note that the notif script depends on bar and beep)

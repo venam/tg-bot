@@ -189,6 +189,20 @@ function complex_command(msg, command,param, away)
 end
 
 function handle_messages(msg,away)
+	if string.match(msg.text, "(http://[%w*.]+)") then
+		page_title =  return_command_output(
+			[[curl -s "]]..
+			string.match(msg.text, "(http://[%w*.]*)")..
+			[[" | sed -n 's/.*<title>\(.*\)<\/title>.*/\1/ip;T;q']]
+		)
+		if page_title == "" or page_title ==" " then
+			page_title = "Blocked Or Not Found"
+		end
+		send_msg_wrapper (
+			msg,
+			page_title
+		)
+	end
 	if string.match(msg.text, "%(%)") then
 		simple_command(msg)
 	elseif (string.match(msg.text, "%(")) then
