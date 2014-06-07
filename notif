@@ -1,0 +1,26 @@
+#!/bin/sh
+#credits to http://blog.z3bra.org/2014/04/pop-it-up.html 
+
+# how long should the popup remain?
+duration=3
+
+# define geometry
+barx=10
+bary=10
+barw=400
+barh=20
+
+# colors
+bar_bg=$'#000000'
+bar_fg=$'#bcbcaf' # white is default
+
+
+# font used
+bar_font=$"-*-terminus-*-*-*--*-*-*-*-*-*-*-*"
+
+# compute all this
+baropt="-g ${barw}x${barh}+${barx}+${bary} -B "${bar_bg}" -f ${bar_font}"
+
+
+#Create the popup and make it live for 3 seconds
+(echo "" $@"";  beep -f 5 -r 3 -l 2 ;sleep ${duration}) | bar ${baropt}

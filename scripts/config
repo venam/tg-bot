@@ -1,0 +1,4 @@
+1   #0 bot_mode off , 1 bot_mode on
+0   #0 cleverbot off, 1 cleverbot on
+1   #0 online       , 1 away
+I am away, you can send me a note using note(your note here)
