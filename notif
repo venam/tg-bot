@@ -23,4 +23,6 @@ baropt="-g ${barw}x${barh}+${barx}+${bary} -B "${bar_bg}" -f ${bar_font}"
 
 
 #Create the popup and make it live for 3 seconds
-(echo "" $@"";  beep -f 5 -r 3 -l 2 ;sleep ${duration}) | bar ${baropt}
+#(echo " $@";  beep -f 5 -r 3 -l 2 ;sleep ${duration}) | bar ${baropt}
+
+(echo -- " $@"| sed s/\*/\\*/;sleep ${duration}) | bar  ${baropt}

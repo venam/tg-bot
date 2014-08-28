@@ -25,23 +25,30 @@ now             = os.time()
 config_location = os.getenv("HOME").."/.telegram/scripts/config"
 clever_location = os.getenv("HOME").."/.telegram/scripts/node/scripts/clever.js"
 dictio_location = os.getenv("HOME").."/.telegram/scripts/node/scripts/dictio.js"
+spell_location  = os.getenv("HOME").."/.telegram/scripts/spell_check.pl"
+bash_location   = os.getenv("HOME").."/.telegram/scripts/bashorg"
+dico_location   = os.getenv("HOME").."/.telegram/scripts/dico.sh"
+manga_command   = "cat /home/raptor/.my_updater/data| grep $(date +%a-%b-%d) | cut -f 1,2 -d ':'"
 knows_i_m_away  = {}
 away_msg        = ""
 
 help = function()
 	return [=[
-
-	help()            : Display this usage information
-	dice()            : Returns a random number 1-6
-	quote()           : Returns a random fortune cookie quote
-	ping()            : Pong back
-	weather()         : Returns the weather status
-	md5(string)       : Returns the md5 hash of the string
-	sha256(string)    : Returns the sha256 of the string
-	define(word)      : Returns the definition of a word
-	cleverbot(string) : Ask the cleverbot something
-	note(something)   : If away, it will save a note for me
-	]=]
+help()            : Display this usage information
+dice()            : Returns a random number 1-6
+fortune()         : Returns a random fortune cookie
+manga()           : Returns if any new manga came out today
+quote()           : Returns an irc quote
+ping()            : Pong back
+weather()         : Returns the weather status
+md5(string)       : Returns the md5 hash of the string
+sha256(string)    : Returns the sha256 of the string
+define(word)      : Returns the definition of a word
+dico(word)        : Search the dictionary for a word
+spell(word)       : Returns if the word, only one, is spelled correctly or not
+cleverbot(string) : Ask the cleverbot something
+note(something)   : If away, it will save a note for me
+]=]
 end
 
 function check_configs()
@@ -114,11 +121,25 @@ function simple_command(msg)
 				[[ echo $((0x$(head -c5 /dev/random|xxd -ps)%6+1))]]
 			)
 		)
-	elseif command == 'quote()' then
+	elseif command == 'fortune()' then
 		send_msg_wrapper(
 			msg, 
 			return_command_output(
 				[[ fortune ]]
+			)
+		)
+	elseif command == 'quote()' then
+		send_msg_wrapper(
+			msg,
+			return_command_output(
+				 bash_location 
+			)
+		)
+	elseif command == 'manga()' then
+		send_msg_wrapper(
+			msg,
+			return_command_output(
+				manga_command
 			)
 		)
 	elseif command =='weather()' then
@@ -172,11 +193,23 @@ function complex_command(msg, command,param, away)
 				"node "..dictio_location.." '"..param.."'"
 			)
 		)
+	elseif command == "dico" then
+		send_msg_wrapper(
+			msg,
+			return_command_output( dico_location.." '"..param.."'")
+		)
 	elseif command == "cleverbot" then
 		send_msg_wrapper(
 			msg,
 			return_command_output(
 				"node "..clever_location.." '".. param.."'"
+			)
+		)
+	elseif command == "spell" then
+		send_msg_wrapper(
+			msg,
+			return_command_output(
+				"perl "..spell_location.." '"..param.."'"
 			)
 		)
 	elseif command == "note" and away then
@@ -203,7 +236,7 @@ function handle_messages(msg,away)
 			page_title
 		)
 	end
-	if string.match(msg.text, "%(%)") then
+	if string.match(msg.text, "^(%w+)%(%)$") then
 		simple_command(msg)
 	elseif (string.match(msg.text, "%(")) then
 		command = string.match(msg.text, [[%w*]])
@@ -267,14 +300,19 @@ function on_msg_receive (msg)
 	if msg.date < now then
 		return
 	end
-	if msg.out then
-		return
-	end
 	if msg.text == nil then
 		return
 	end
 	if msg.unread == 0 then
 		return
+	end 
+	if msg.out then
+		--[=[--
+		own message sent
+		--]=]--
+		if msg.to.print_name ~= our_id then
+			return
+		end
 	end
 	bot, clever, away = check_configs()
 
