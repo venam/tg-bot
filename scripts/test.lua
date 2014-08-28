@@ -112,112 +112,16 @@ end
 
 function simple_command(msg)
 	command = string.lower(msg.text)
-	if command == 'ping()' then
-		send_msg (msg.from.print_name, 'pong')
-	elseif command == 'dice()' then
-		send_msg_wrapper(
-			msg, 
-			return_command_output(
-				[[ echo $((0x$(head -c5 /dev/random|xxd -ps)%6+1))]]
-			)
-		)
-	elseif command == 'fortune()' then
-		send_msg_wrapper(
-			msg, 
-			return_command_output(
-				[[ fortune ]]
-			)
-		)
-	elseif command == 'quote()' then
-		send_msg_wrapper(
-			msg,
-			return_command_output(
-				 bash_location 
-			)
-		)
-	elseif command == 'manga()' then
-		send_msg_wrapper(
-			msg,
-			return_command_output(
-				manga_command
-			)
-		)
-	elseif command =='weather()' then
-		send_msg_wrapper(
-			msg,
-			return_command_output(
-				[[cat -s .my_updater/data | grep -E "WEATHER"]]
-			).. [[
-
-			]] ..
-			return_command_output(
-				[[cat -s .my_updater/data | grep -E "TOMORROW"]]
-			).. [[
-
-			]] ..
-			return_command_output(
-				[[cat -s .my_updater/data | grep -E "TEMP:"]]
-			)..[[
-
-			]]
-		)
-	elseif command == "help()" then
-		send_msg_wrapper(
-			msg,
-			help()
-		)
+	if simple_commands_list[command] then
+		simple_commands_list[command](msg)
 	end
 end
 
 function complex_command(msg, command,param, away)
 	command = string.lower(command)
 	param   = string.gsub(param, "'", "") --preventing code injection
-	if command == "md5" then
-		send_msg_wrapper( 
-			msg,
-			return_command_output(
-				"echo '"..param.."'".." | md5sum"
-			)
-		)
-	elseif command == "sha256" then
-		send_msg_wrapper( 
-			msg,
-				return_command_output(
-				"echo '"..param.."'".." | sha256sum"
-			)
-		)
-	elseif command == "define" then
-		send_msg_wrapper(
-			msg,
-			return_command_output(
-				"node "..dictio_location.." '"..param.."'"
-			)
-		)
-	elseif command == "dico" then
-		send_msg_wrapper(
-			msg,
-			return_command_output( dico_location.." '"..param.."'")
-		)
-	elseif command == "cleverbot" then
-		send_msg_wrapper(
-			msg,
-			return_command_output(
-				"node "..clever_location.." '".. param.."'"
-			)
-		)
-	elseif command == "spell" then
-		send_msg_wrapper(
-			msg,
-			return_command_output(
-				"perl "..spell_location.." '"..param.."'"
-			)
-		)
-	elseif command == "note" and away then
-		write_email(msg.from.print_name, msg.date, param)
-		send_msg_wrapper( 
-			msg,
-			"Message '"..param.."' from "..msg.from.phone.." was noted"
-		)
+	if complex_commands_list[command] then
+		complex_commands_list[command](msg,param)
 	end
 end
 
@@ -364,3 +268,126 @@ end
 
 function on_binlog_replay_end ()
 end
+
+simple_commands_list = {
+	["ping()"] = function(msg)
+		send_msg (msg.from.print_name, 'pong')
+	end,
+	["dice()"] = function(msg)
+		send_msg_wrapper(
+			msg, 
+			return_command_output(
+				[[ echo $((0x$(head -c5 /dev/random|xxd -ps)%6+1))]]
+			)
+		)
+	end,
+	["fortune()"] = function(msg)
+		send_msg_wrapper(
+			msg, 
+			return_command_output(
+				[[ fortune ]]
+			)
+		)
+	end,
+	["quote()"] = function(msg)
+		send_msg_wrapper(
+			msg,
+			return_command_output(
+				bash_location 
+			)
+		)
+	end,
+	["manga()"] = function(msg)
+		send_msg_wrapper(
+			msg,
+			return_command_output(
+				manga_command
+			)
+		)
+	end,
+	["weather()"] = function(msg)
+		send_msg_wrapper(
+			msg,
+			return_command_output(
+				[[cat -s .my_updater/data | grep -E "WEATHER"]]
+			).. [[
+
+			]] ..
+			return_command_output(
+				[[cat -s .my_updater/data | grep -E "TOMORROW"]]
+			).. [[
+
+			]] ..
+			return_command_output(
+				[[cat -s .my_updater/data | grep -E "TEMP:"]]
+			)..[[
+
+			]]
+		)
+	end,
+	["help()"] = function(msg)
+		send_msg_wrapper(
+			msg,
+			help()
+		)
+	end
+}
+
+complex_commands_list = {
+	["md5"] = function(msg,param)
+		send_msg_wrapper( 
+			msg,
+			return_command_output(
+				"echo '"..param.."'".." | md5sum"
+			)
+		)
+	end,
+	["sha256"] = function(msg,param)
+		send_msg_wrapper( 
+			msg,
+				return_command_output(
+				"echo '"..param.."'".." | sha256sum"
+			)
+		)
+	end,
+	["define"] = function(msg,param)
+		send_msg_wrapper(
+			msg,
+			return_command_output(
+				"node "..dictio_location.." '"..param.."'"
+			)
+		)
+	end,
+	["dico"] = function(msg,param)
+		send_msg_wrapper(
+			msg,
+			return_command_output( dico_location.." '"..param.."'")
+		)
+	end,
+	["cleverbot"] = function(msg,param)
+		send_msg_wrapper(
+			msg,
+			return_command_output(
+				"node "..clever_location.." '".. param.."'"
+			)
+		)
+	end,
+	["spell"] = function(msg,param)
+		send_msg_wrapper(
+			msg,
+			return_command_output(
+				"perl "..spell_location.." '"..param.."'"
+			)
+		)
+	end,
+	["note"] = function(msg,param)
+		if away then
+			write_email(msg.from.print_name, msg.date, param)
+			send_msg_wrapper( 
+				msg,
+				"Message '"..param.."' from "..msg.from.phone.." was noted"
+			)
+		end
+	end
+}
+
