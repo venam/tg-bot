@@ -1,0 +1,21 @@
+#!/usr/bin/perl
+use warnings;
+use strict;
+
+die "No Arg Passed" unless ($ARGV[0]);
+my @splits;
+
+my $arg = (split/ /,$ARGV[0])[0];
+
+open ENCHANT, "echo '".$arg."' | enchant -a |" or die $!;
+for (<ENCHANT>) {
+	@splits  = split/, /,(split /\: /,$_)[1] if (/^& /) ;
+}
+
+if ($#splits!=-1) {
+	print "Has spelling error\nListing alternatives:\n";
+	print $_."\n" for (@splits);
+}
+else {
+	print "No spelling error found\n";
+}

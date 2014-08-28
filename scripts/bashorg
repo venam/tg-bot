@@ -1,0 +1,26 @@
+#!/usr/bin/perl
+use warnings;
+use strict;
+
+open LYNX, "lynx -source http://bash.org/?random |" or die $!;
+my $found_start = 0;
+
+for (<LYNX>) {
+	if (/<p class="quote">/ and $found_start) {
+		last;
+	}
+	if (/<p class="qt">/ or $found_start) {
+		my $quote = $_;
+		$quote = (split/<p class="qt">/,$_)[1] if (/<p class="qt">/);
+		$quote    =~ s/&lt;/</g; 
+		$quote    =~ s/&gt;/>/g; 
+		$quote    =~ s/<br \/>//g; 
+		$quote    =~ s/<\/p>/\n/g;
+		$quote    =~ s/&nbsp;/ /g;
+		$quote    =~ s/&quot;/"/g;
+		$quote    =~ s/&amp;/&/g;
+		$found_start = 1;
+		print $quote;
+	}
+}
+
