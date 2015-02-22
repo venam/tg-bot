@@ -14,13 +14,13 @@
 	ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
 	WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 	ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-	OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+	OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 --]=]--
 
 --[[CONFIG LOCATIONS AND GLOBAL VARS]]--
 
-our_id          = "your_id_here" --replace this with your own id
+our_id          = "38475118" --replace this with your own id
 now             = os.time()
 config_location = os.getenv("HOME").."/.telegram/scripts/config"
 clever_location = os.getenv("HOME").."/.telegram/scripts/node/scripts/clever.js"
@@ -28,7 +28,8 @@ dictio_location = os.getenv("HOME").."/.telegram/scripts/node/scripts/dictio.js"
 spell_location  = os.getenv("HOME").."/.telegram/scripts/spell_check.pl"
 bash_location   = os.getenv("HOME").."/.telegram/scripts/bashorg"
 dico_location   = os.getenv("HOME").."/.telegram/scripts/dico.sh"
-manga_command   = "cat /home/raptor/.my_updater/data| grep $(date +%a-%b-%d) | cut -f 1,2 -d ':'"
+manga_command   = 'cat /home/raptor/.my_updater/data| grep "$(date +%a-%b-%e)" | cut -f 1,2 -d ":"'
+mg_running_command = 'ps -eo pcpu,pid,user,args | sort -k 1 -r|grep mangaDL | grep "/home/raptor" | cut -d "/" -f 8 | cut -d " " -f 2,3'
 knows_i_m_away  = {}
 away_msg        = ""
 
@@ -40,7 +41,6 @@ fortune()         : Returns a random fortune cookie
 manga()           : Returns if any new manga came out today
 quote()           : Returns an irc quote
 ping()            : Pong back
-weather()         : Returns the weather status
 md5(string)       : Returns the md5 hash of the string
 sha256(string)    : Returns the sha256 of the string
 define(word)      : Returns the definition of a word
@@ -69,6 +69,23 @@ function check_configs()
 	return bot_on, cleverbot_always_on,away_on
 end
 
+function ok_cb(extra, success, result)
+end
+
+function get_title (P, Q)
+if (Q.type == 'user') then
+  return P.first_name .. " " .. P.last_name
+elseif (Q.type == 'chat') then
+  return Q.title
+elseif (Q.type == 'encr_chat') then
+  return 'Secret chat with ' .. P.first_name .. ' ' .. P.last_name
+else
+  return ''
+end
+end
+
+
+
 function user_knows_i_m_away(user)
 	for k,v in pairs(knows_i_m_away) do
 		if v ==user then
@@ -91,6 +108,7 @@ function write_email(user, date, content)
 			"\nCONTENT:"..content..
 			"\n\n-END-\n\n")
 	f:flush()
+	os.execute("beep")
 	os.execute("/usr/lib/nmh/rcvstore < "..name)
 	os.remove(name)
 end
@@ -104,9 +122,9 @@ end
 
 function send_msg_wrapper(msg, text)
 	if msg.to.print_name ~= our_id then
-		send_msg( msg.to.print_name, text)
+		send_msg (msg.to.print_name, text, ok_cb, false)
 	else 
-		send_msg(msg.from.print_name, text)
+		send_msg (msg.from.print_name, text, ok_cb, false)
 	end
 end
 
@@ -126,6 +144,7 @@ function complex_command(msg, command,param, away)
 end
 
 function handle_messages(msg,away)
+	--[=[--
 	if string.match(msg.text, "(http://[%w*.]+)") then
 		page_title =  return_command_output(
 			[[curl -s "]]..
@@ -139,7 +158,7 @@ function handle_messages(msg,away)
 			msg,
 			page_title
 		)
-	end
+	end--]=]--
 	if string.match(msg.text, "^(%w+)%(%)$") then
 		simple_command(msg)
 	elseif (string.match(msg.text, "%(")) then
@@ -214,7 +233,7 @@ function on_msg_receive (msg)
 		--[=[--
 		own message sent
 		--]=]--
-		if msg.to.print_name ~= our_id then
+		if msg.to.id ~= our_id then
 			return
 		end
 	end
@@ -271,7 +290,7 @@ end
 
 simple_commands_list = {
 	["ping()"] = function(msg)
-		send_msg (msg.from.print_name, 'pong')
+		send_msg (msg.from.print_name, 'pong', ok_cb, false)
 	end,
 	["dice()"] = function(msg)
 		send_msg_wrapper(
@@ -285,7 +304,7 @@ simple_commands_list = {
 		send_msg_wrapper(
 			msg, 
 			return_command_output(
-				[[ fortune ]]
+				[[ fortune -s ]]
 			)
 		)
 	end,
@@ -305,30 +324,18 @@ simple_commands_list = {
 			)
 		)
 	end,
-	["weather()"] = function(msg)
-		send_msg_wrapper(
-			msg,
-			return_command_output(
-				[[cat -s .my_updater/data | grep -E "WEATHER"]]
-			).. [[
-
-			]] ..
-			return_command_output(
-				[[cat -s .my_updater/data | grep -E "TOMORROW"]]
-			).. [[
-
-			]] ..
-			return_command_output(
-				[[cat -s .my_updater/data | grep -E "TEMP:"]]
-			)..[[
-
-			]]
-		)
-	end,
 	["help()"] = function(msg)
 		send_msg_wrapper(
 			msg,
 			help()
+		)
+	end,
+	["mgrn()"] = function(msg)
+		send_msg_wrapper(
+			msg,
+			return_command_output(
+				mg_running_command
+			)
 		)
 	end
 }
@@ -388,6 +395,28 @@ complex_commands_list = {
 				"Message '"..param.."' from "..msg.from.phone.." was noted"
 			)
 		end
+	end,
+	["mgls"] = function(msg,param)
+		local manga = string.match(param,"([%a-_]+):%d*$")
+		local param = string.gsub(param, ":","-")
+		send_msg_wrapper( 
+			msg,
+			return_command_output(
+				"ls '/home/raptor/mangaDL/"..manga.."/"..param.."'"
+			)
+		)
+		print("ls '/home/raptor/mangaDL/"..manga.."/"..param.."'")
+	end,
+	["mgdl"] = function(msg,param)
+		local manga  = string.match(param,"([%a-_]+):%d*$")
+		local number = string.match(param, ":(%d+)$")
+		print(manga.." "..number)
+		send_msg_wrapper(
+			msg,
+			"Starting Download of "..manga.." "..number
+		)
+		local command = "python2 /home/raptor/mangaDL/mangaDL.py '/home/raptor/mangaDL' ".." '"..manga.."' "..number.." "..number.."&"
+		io.popen(command)
 	end
 }
 
