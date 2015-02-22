@@ -121,7 +121,7 @@ function return_command_output(command)
 end
 
 function send_msg_wrapper(msg, text)
-	if msg.to.print_name ~= our_id then
+	if msg.to.id ~= our_id then
 		send_msg (msg.to.print_name, text, ok_cb, false)
 	else 
 		send_msg (msg.from.print_name, text, ok_cb, false)
@@ -241,7 +241,7 @@ function on_msg_receive (msg)
 
 	if (away)  then
 		sender = ""
-		if msg.to.print_name ~= our_id then
+		if msg.to.id ~= our_id then
 			sender = msg.to.print_name
 		else
 			sender = msg.from.print_name
@@ -335,6 +335,14 @@ simple_commands_list = {
 			msg,
 			return_command_output(
 				mg_running_command
+			)
+		)
+	end,
+	["todo()"] = function(msg)
+		send_msg_wrapper(
+			msg,
+			return_command_output(
+				"cat /home/raptor/TODO.markdown"
 			)
 		)
 	end
